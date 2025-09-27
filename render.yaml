@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cough-analyzer
+    env: python
+    plan: starter  # change to "standard" if model is very heavy
+    region: oregon  # or frankfurt (closer to Europe/Africa)
+    buildCommand: |
+      apt-get update && apt-get install -y ffmpeg
+      pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    autoDeploy: true

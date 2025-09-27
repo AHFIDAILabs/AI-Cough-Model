@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TB Risk Prediction - AI Cough Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      background: linear-gradient(to bottom right, rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
+                  url('/static/prediction_image.png') no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 20px;
+    }
+    main {
+      width: 100%;
+      max-width: 850px;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 40px 35px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 35px;
+      font-size: 2rem;
+      color: #ffffff;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #b2dfdb;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      outline: none;
+    }
+    input, select { background-color: rgba(255, 255, 255, 0.85); color: #222; }
+    select { appearance: none; }
+    button {
+      background-color: #00695c;
+      color: white;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    button:hover { background-color: #004d40; }
+    #recordingStatus { text-align: center; font-style: italic; color: #80cbc4; margin-bottom: 15px; }
+    .result {
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 20px 25px;
+      border-radius: 12px;
+      border-left: 6px solid #004d40;
+    }
+    .result p { margin: 10px 0; color: #f1f1f1; font-size: 1rem; }
+    #spectrogramImg {
+      margin-top: 15px; width: 100%; border-radius: 12px; display: none; border: 2px solid #ccc;
+    }
+    .pdf-download { margin-top: 25px; text-align: center; }
+    .pdf-download a {
+      display: inline-block; background-color: #00796b; color: white;
+      padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;
+      transition: background 0.3s ease;
+    }
+    .pdf-download a:hover { background-color: #004d40; }
+    #loadingSpinner { text-align: center; color: #80cbc4; font-style: italic; margin-top: 20px; display: none; }
+    details {
+      margin-top: 18px; background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px; padding: 12px 16px; cursor: pointer;
+    }
+    details summary { font-weight: bold; font-size: 1.05rem; color: #80cbc4; cursor: pointer; outline: none; }
+    details[open] { background: rgba(255, 255, 255, 0.08); }
+    details p { margin-top: 12px; }
+    .back-home {
+      position: fixed; bottom: 0; left: 0;
+      background-color: rgba(0, 121, 107, 0.9); color: white;
+      padding: 12px 18px; border-radius: 0 8px 0 0;
+      font-size: 0.95rem; text-decoration: none; font-weight: bold;
+      transition: background 0.3s ease; z-index: 999;
+    }
+    .back-home:hover { background-color: rgba(0, 77, 64, 0.95); }
+    @media (max-width: 600px) {
+      main { padding: 25px 20px; }
+      .back-home { font-size: 0.85rem; padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>TB Risk Prediction</h2>
+    <form id="predictionForm" enctype="multipart/form-data">
+
+      <!-- Clinical Features (Only the 5 required) -->
+      <label>Do you smoke weekly?</label>
+      <select name="smoke_lweek" required>
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+
+      <label>Weight (kg):</label>
+      <input type="number" name="weight" step="0.1" required>
+
+      <label>Age:</label>
+      <input type="number" name="age" min="1" max="100" required>
+
+      <label>Do you have fever?</label>
+      <select name="fever" required>
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+
+      <label>History of Pulmonary TB?</label>
+      <select name="tb_prior_Pul" required>
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+
+      <!-- Cough Audio -->
+      <label>Upload or Record Cough Audio:</label>
+      <input type="file" name="audio_file" id="audioInput" accept="audio/*">
+      <div style="text-align:center;">
+        <button type="button" onclick="startRecording()"> Start</button>
+        <button type="button" onclick="stopRecording()"> Stop</button>
+        <p id="recordingStatus"></p>
+      </div>
+
+      <button type="submit">Predict</button>
+    </form>
+
+    <div id="loadingSpinner">⏳ Predicting... Please wait.</div>
+
+    <div class="result" id="resultBox" style="display:none;">
+      <p><strong>Date:</strong> <span id="dateText"></span></p>
+      <p><strong>Prediction:</strong> <span id="predictionText"></span></p>
+      <p><strong>Confidence Score:</strong> <span id="confidenceScore"></span></p>
+
+      <details>
+        <summary>Recommendation</summary>
+        <p id="recommendationText"></p>
+      </details>
+
+      <details>
+        <summary>Cough Audio Pattern</summary>
+        <img id="spectrogramImg" src="" alt="Spectrogram of Cough">
+      </details>
+
+      <p style="font-size: 14px; color: #ccc; margin-top: 15px;">
+        <em><strong>Disclaimer:</strong> <span id="disclaimerText"></span></em>
+      </p>
+
+      <div class="pdf-download" id="pdfLinkBox" style="display:none;">
+        <a id="pdfDownload" href="#" download>📄 Download PDF Report</a>
+      </div>
+    </div>
+  </main>
+
+  <a href="{{ url_for('home') }}" class="back-home"> Back to Home</a>
+
+  <script>
+    let mediaRecorder, audioChunks = [];
+    function startRecording() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.start();
+        document.getElementById("recordingStatus").innerText = "Recording...";
+      }).catch(err => { alert("Microphone access denied or unsupported: " + err); });
+    }
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          const file = new File([blob], "recorded.webm", { type: "audio/webm" });
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          document.getElementById("audioInput").files = dataTransfer.files;
+          document.getElementById("recordingStatus").innerText = "Recording complete.";
+        };
+      }
+    }
+    document.getElementById("predictionForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      document.getElementById("loadingSpinner").style.display = "block";
+      document.getElementById("resultBox").style.display = "none";
+      const formData = new FormData(this);
+      fetch("/predict", { method: "POST", body: formData })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("loadingSpinner").style.display = "none";
+        if (data.error) { alert(data.error); return; }
+        document.getElementById("resultBox").style.display = "block";
+        document.getElementById("predictionText").innerText = data.prediction;
+        document.getElementById("confidenceScore").innerText = data.confidence;
+        document.getElementById("recommendationText").innerText = data.recommendation;
+        document.getElementById("disclaimerText").innerText = data.disclaimer;
+        document.getElementById("dateText").innerText = data.date;
+        if (data.spectrogram_base64) {
+          const img = document.getElementById("spectrogramImg");
+          img.src = "data:image/png;base64," + data.spectrogram_base64;
+          img.style.display = "block";
+        }
+        if (data.report_link) {
+          const linkBox = document.getElementById("pdfLinkBox");
+          const downloadLink = document.getElementById("pdfDownload");
+          downloadLink.href = data.report_link;
+          linkBox.style.display = "block";
+        }
+      })
+      .catch(err => {
+        document.getElementById("loadingSpinner").style.display = "none";
+        alert("Prediction failed. Please try again."); console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>

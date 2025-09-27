@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Cough Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to bottom, #f2f6f9, #dfe9f3);
+      color: #fff;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      background: url('/static/home_image.png') no-repeat center center/cover;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      background: rgba(0, 0, 0, 0.55);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      z-index: -1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 60px;
+      background: transparent;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    nav {
+      display: flex;
+      gap: 30px;
+    }
+
+    nav a {
+      text-decoration: none;
+      font-weight: 500;
+      color: #f0f0f0;
+      font-size: 16px;
+    }
+
+    nav a:hover {
+      color: #80deea;
+    }
+
+    .menu-icon {
+      display: none;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .menu-icon div {
+      width: 25px;
+      height: 3px;
+      background-color: #fff;
+      margin: 4px 0;
+    }
+
+    .mobile-nav {
+      display: none;
+      flex-direction: column;
+      background-color: rgba(255, 255, 255, 0.95);
+      position: absolute;
+      top: 70px;
+      right: 50px;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+
+    .mobile-nav a {
+      padding: 10px 0;
+      color: #333;
+      text-decoration: none;
+    }
+
+    .mobile-nav a:hover {
+      color: #0c5975;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 100px 20px 40px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .hero h1 {
+      font-size: 50px;
+      font-family: 'Playfair Display', serif;
+      color: #fff;
+      margin-bottom: 25px;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: #eaeaea;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .info-message {
+      background: rgba(255, 255, 255, 0.08);
+      border-left: 6px solid #80deea;
+      border-radius: 16px;
+      padding: 25px 30px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.6;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      margin: 0 auto 60px;
+      max-width: 700px;
+    }
+
+    .start-now-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 80px 80px;
+    }
+
+    .start-now-button {
+      background: linear-gradient(135deg, #80deea, #7b50e4);
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 16px 48px;
+      border: none;
+      border-radius: 35px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .start-now-button:hover {
+      transform: scale(1.06);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #eee;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    footer a {
+      color: #80deea;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        display: none;
+      }
+
+      .menu-icon {
+        display: flex;
+      }
+
+      .start-now-wrapper {
+        justify-content: center;
+        padding: 40px 20px 60px;
+      }
+
+      .hero h1 {
+        font-size: 38px;
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      .info-message {
+        padding: 20px;
+        font-size: 15px;
+      }
+    }
+  </style>
+
+  <script>
+    function toggleMenu() {
+      const mobileNav = document.getElementById("mobileNav");
+      mobileNav.style.display = mobileNav.style.display === "flex" ? "none" : "flex";
+    }
+
+    window.onclick = function(e) {
+      const menu = document.getElementById("mobileNav");
+      const icon = document.getElementById("menuIcon");
+      if (!icon.contains(e.target) && !menu.contains(e.target)) {
+        menu.style.display = "none";
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">AI Cough Analyzer</div>
+
+    <nav>
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('predict_form') }}">Predict</a>
+      <a href="{{ url_for('faq') }}">FAQ</a>
+    </nav>
+
+    <div class="menu-icon" id="menuIcon" onclick="toggleMenu()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <div class="mobile-nav" id="mobileNav">
+      <a href="/">Home</a>
+      <a href="/predict">Prediction</a>
+      <a href="/faq">FAQ</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Welcome</h1>
+    <p>
+      Track and understand your cough with smart sound analysis.<br><br>
+      This tool helps you monitor your cough and gain valuable insights into your respiratory health.<br><br>
+      It listens to your cough, identifies the type (like dry, wet, or whooping), and helps you understand its potential severity.
+    </p>
+
+    <div class="info-message">
+      This tool is specially trained to detect signs of pulmonary tuberculosis (TB) using cough sounds and symptoms — providing early guidance before formal diagnosis.
+    </div>
+  </section>
+
+  <!-- Start Now Button -->
+  <div class="start-now-wrapper">
+    <a href="{{ url_for('predict_form') }}" class="start-now-button">Start Now</a>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    © 2025 AI Cough Analyzer | AHFID &nbsp; | &nbsp;
+    <a href="mailto:info@ahfid.org">info@ahfid.org</a> &nbsp; | &nbsp;
+    All rights reserved.
+  </footer>
+
+</body>
+</html>
