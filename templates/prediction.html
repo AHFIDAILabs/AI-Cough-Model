@@ -27,7 +27,6 @@
       border-radius: 18px;
       padding: 40px 35px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-      position: relative;
     }
     h2 {
       text-align: center;
@@ -51,7 +50,6 @@
       outline: none;
     }
     input, select { background-color: rgba(255, 255, 255, 0.85); color: #222; }
-    select { appearance: none; }
     button {
       background-color: #00695c;
       color: white;
@@ -59,175 +57,288 @@
       transition: all 0.3s ease;
       cursor: pointer;
     }
-    button:hover { background-color: #004d40; }
-    #recordingStatus { text-align: center; font-style: italic; color: #80cbc4; margin-bottom: 15px; }
-    .result {
-      margin-top: 30px;
-      background: rgba(255, 255, 255, 0.08);
-      padding: 20px 25px;
-      border-radius: 12px;
-      border-left: 6px solid #004d40;
+    button:hover:not(:disabled) { background-color: #004d40; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background-color: #666;
     }
-    .result p { margin: 10px 0; color: #f1f1f1; font-size: 1rem; }
-    #spectrogramImg {
-      margin-top: 15px; width: 100%; border-radius: 12px; display: none; border: 2px solid #ccc;
+    #recordingStatus {
+      text-align: center;
+      font-style: italic;
+      color: #80cbc4;
+      margin: 10px 0;
+      min-height: 20px;
     }
-    .pdf-download { margin-top: 25px; text-align: center; }
-    .pdf-download a {
-      display: inline-block; background-color: #00796b; color: white;
-      padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;
-      transition: background 0.3s ease;
+    .recording { color: #ff6b6b; font-weight: bold; }
+    .recorded { color: #51cf66; font-weight: bold; }
+    #loadingSpinner {
+      text-align: center;
+      color: #80cbc4;
+      font-style: italic;
+      margin-top: 20px;
+      display: none;
     }
-    .pdf-download a:hover { background-color: #004d40; }
-    #loadingSpinner { text-align: center; color: #80cbc4; font-style: italic; margin-top: 20px; display: none; }
-    details {
-      margin-top: 18px; background: rgba(255, 255, 255, 0.05);
-      border-radius: 10px; padding: 12px 16px; cursor: pointer;
+    .audio-quality-warning {
+      background: rgba(255, 107, 107, 0.2);
+      border-left: 4px solid #ff6b6b;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 8px;
     }
-    details summary { font-weight: bold; font-size: 1.05rem; color: #80cbc4; cursor: pointer; outline: none; }
-    details[open] { background: rgba(255, 255, 255, 0.08); }
-    details p { margin-top: 12px; }
-    .back-home {
-      position: fixed; bottom: 0; left: 0;
-      background-color: rgba(0, 121, 107, 0.9); color: white;
-      padding: 12px 18px; border-radius: 0 8px 0 0;
-      font-size: 0.95rem; text-decoration: none; font-weight: bold;
-      transition: background 0.3s ease; z-index: 999;
+    .audio-quality-good {
+      background: rgba(81, 207, 102, 0.2);
+      border-left: 4px solid #51cf66;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 8px;
     }
-    .back-home:hover { background-color: rgba(0, 77, 64, 0.95); }
-    @media (max-width: 600px) {
-      main { padding: 25px 20px; }
-      .back-home { font-size: 0.85rem; padding: 10px 14px; }
+    .audio-instruction {
+      background: rgba(255, 165, 0, 0.15);
+      border-left: 4px solid #ffa500;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #ffd699;
     }
   </style>
 </head>
 <body>
   <main>
     <h2>TB Risk Prediction</h2>
+
+
     <form id="predictionForm" enctype="multipart/form-data">
 
-      <!-- Clinical Features (Only the 5 required) -->
       <label>Do you smoke weekly?</label>
       <select name="smoke_lweek" required>
-        <option value="1">Yes</option>
+        <option value="">-- Select --</option>
         <option value="0">No</option>
+        <option value="1">Yes</option>
       </select>
 
       <label>Weight (kg):</label>
-      <input type="number" name="weight" step="0.1" required>
+      <input type="number" name="weight" step="0.1" min="1" max="300" required>
 
       <label>Age:</label>
-      <input type="number" name="age" min="1" max="100" required>
+      <input type="number" name="age" min="1" max="120" required>
 
       <label>Do you have fever?</label>
       <select name="fever" required>
-        <option value="1">Yes</option>
+        <option value="">-- Select --</option>
         <option value="0">No</option>
+        <option value="1">Yes</option>
       </select>
 
       <label>History of Pulmonary TB?</label>
       <select name="tb_prior_Pul" required>
-        <option value="1">Yes</option>
+        <option value="">-- Select --</option>
         <option value="0">No</option>
+        <option value="1">Yes</option>
       </select>
 
-      <!-- Cough Audio -->
-      <label>Upload or Record Cough Audio:</label>
-      <input type="file" name="audio_file" id="audioInput" accept="audio/*">
-      <div style="text-align:center;">
-        <button type="button" onclick="startRecording()"> Start</button>
-        <button type="button" onclick="stopRecording()"> Stop</button>
-        <p id="recordingStatus"></p>
+      <hr style="margin: 25px 0; border-color: rgba(255,255,255,0.2);">
+
+      <h3 style="text-align:center; color: #b2dfdb;"> Cough Recording</h3>
+
+      <div class="audio-instruction">
+        <strong>💡 Quick Tip:</strong> For best results, record a clear cough. The system will automatically verify your audio quality.
       </div>
 
-      <button type="submit">Predict</button>
+      <label>Cough Audio:</label>
+      <input type="file" name="audio_file" id="audioInput" accept="audio/*" style="margin-bottom: 10px;">
+
+      <div style="text-align:center; margin-bottom: 10px;">
+        <button type="button" id="recordBtn" style="width: 48%; display: inline-block; margin: 5px 1%;">
+          🎙️ Start Recording
+        </button>
+        <button type="button" id="stopBtn" style="width: 48%; display: inline-block; margin: 5px 1%; background: #95a5a6;" disabled>
+          ⏹️ Stop
+        </button>
+      </div>
+
+      <p id="recordingStatus"></p>
+
+      <div id="qualityFeedback" style="display: none;"></div>
+
+      <button id="predictButton" type="submit"> Predict TB Risk</button>
     </form>
 
-    <div id="loadingSpinner">⏳ Predicting... Please wait.</div>
+    <div id="loadingSpinner">⏳ Analyzing... Please wait.</div>
 
-    <div class="result" id="resultBox" style="display:none;">
-      <p><strong>Date:</strong> <span id="dateText"></span></p>
-      <p><strong>Prediction:</strong> <span id="predictionText"></span></p>
-      <p><strong>Confidence Score:</strong> <span id="confidenceScore"></span></p>
-
-      <details>
-        <summary>Recommendation</summary>
-        <p id="recommendationText"></p>
-      </details>
-
-      <details>
-        <summary>Cough Audio Pattern</summary>
-        <img id="spectrogramImg" src="" alt="Spectrogram of Cough">
-      </details>
-
-      <p style="font-size: 14px; color: #ccc; margin-top: 15px;">
-        <em><strong>Disclaimer:</strong> <span id="disclaimerText"></span></em>
-      </p>
-
-      <div class="pdf-download" id="pdfLinkBox" style="display:none;">
-        <a id="pdfDownload" href="#" download>📄 Download PDF Report</a>
-      </div>
-    </div>
+    <div id="resultBox" style="display:none; margin-top:25px; background:rgba(255,255,255,0.1); padding:20px; border-radius:10px;"></div>
   </main>
 
-  <a href="{{ url_for('home') }}" class="back-home"> Back to Home</a>
-
   <script>
-    let mediaRecorder, audioChunks = [];
-    function startRecording() {
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('recordingStatus');
+    const qualityFeedback = document.getElementById('qualityFeedback');
+    const audioInput = document.getElementById('audioInput');
+
+    recordBtn.addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
         audioChunks = [];
-        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-        mediaRecorder.start();
-        document.getElementById("recordingStatus").innerText = "Recording...";
-      }).catch(err => { alert("Microphone access denied or unsupported: " + err); });
-    }
-    function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
         mediaRecorder.onstop = () => {
           const blob = new Blob(audioChunks, { type: "audio/webm" });
-          const file = new File([blob], "recorded.webm", { type: "audio/webm" });
+          const file = new File([blob], `cough_recording.webm`, { type: "audio/webm" });
+
           const dataTransfer = new DataTransfer();
           dataTransfer.items.add(file);
-          document.getElementById("audioInput").files = dataTransfer.files;
-          document.getElementById("recordingStatus").innerText = "Recording complete.";
+          audioInput.files = dataTransfer.files;
+
+          status.innerHTML = '<span class="recorded">✓ Cough recorded! You can now predict.</span>';
+          qualityFeedback.style.display = 'none';
+
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
         };
+
+        mediaRecorder.start();
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        status.innerHTML = '<span class="recording">● Recording... Please cough now</span>';
+      } catch (err) {
+        alert('Microphone access error: ' + err.message);
       }
-    }
-    document.getElementById("predictionForm").addEventListener("submit", function (e) {
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+      }
+    });
+
+    document.getElementById('predictionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      document.getElementById("loadingSpinner").style.display = "block";
-      document.getElementById("resultBox").style.display = "none";
-      const formData = new FormData(this);
-      fetch("/predict", { method: "POST", body: formData })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("loadingSpinner").style.display = "none";
-        if (data.error) { alert(data.error); return; }
-        document.getElementById("resultBox").style.display = "block";
-        document.getElementById("predictionText").innerText = data.prediction;
-        document.getElementById("confidenceScore").innerText = data.confidence;
-        document.getElementById("recommendationText").innerText = data.recommendation;
-        document.getElementById("disclaimerText").innerText = data.disclaimer;
-        document.getElementById("dateText").innerText = data.date;
+
+      document.getElementById('loadingSpinner').style.display = 'block';
+      document.getElementById('resultBox').style.display = 'none';
+      qualityFeedback.style.display = 'none';
+
+      const formData = new FormData(e.target);
+
+      try {
+        const response = await fetch('/predict', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        document.getElementById('loadingSpinner').style.display = 'none';
+
+        // Handle audio quality error
+        if (data.error === 'audio_quality_failed') {
+          qualityFeedback.className = 'audio-quality-warning';
+          qualityFeedback.innerHTML = `
+            <h4 style="margin-top: 0; color: #ff6b6b;">⚠️ Audio Quality Issue</h4>
+            <p><strong>${data.message}</strong></p>
+            <p style="font-size: 0.9rem; margin-top: 10px;">
+              Quality Score: ${data.quality_score}/100
+            </p>
+            <p style="font-size: 0.9rem; margin-top: 10px;">
+              <strong>Please record again with:</strong><br>
+              • A clear, audible cough (not silence)<br>
+              • At least 0.8 seconds duration<br>
+              • Minimal background noise
+            </p>
+          `;
+          qualityFeedback.style.display = 'block';
+
+          // Reset recording status
+          status.innerHTML = '<span style="color: #ffa500;">⚠️ Please record a valid cough and try again</span>';
+          audioInput.value = '';
+
+          return;
+        }
+
+        // Handle other errors
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
+        }
+
+        // Success - display results
+        const resultBox = document.getElementById('resultBox');
+        resultBox.style.display = 'block';
+
+        let html = `
+          <h3 style="color: ${data.prediction.includes('Probable') ? '#ff6b6b' : '#51cf66'};">
+            ${data.prediction}
+          </h3>
+          <p><strong>Date:</strong> ${data.date}</p>
+          <p><strong>Confidence Score:</strong> ${data.confidence}</p>
+          <p><strong>Clinical Summary:</strong> ${data.clinical_summary}</p>
+        `;
+
+        // Add audio quality info if available
+        if (data.audio_used && data.audio_quality) {
+          html += `
+            <div class="audio-quality-good">
+              <p style="margin: 0;"><strong>✅ Cough Audio Validated</strong></p>
+              <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Quality Score: ${data.audio_quality.score}/100</p>
+              <p style="margin: 5px 0 0 0; font-size: 0.9rem;">${data.audio_quality.message}</p>
+            </div>
+          `;
+        }
+
+        html += `
+          <hr style="margin: 15px 0; border-color: rgba(255,255,255,0.3);">
+          <p><strong>Recommendation:</strong></p>
+          <div style="white-space: pre-wrap; line-height: 1.6;">${data.recommendation}</div>
+        `;
+
+        // Add spectrogram
         if (data.spectrogram_base64) {
-          const img = document.getElementById("spectrogramImg");
-          img.src = "data:image/png;base64," + data.spectrogram_base64;
-          img.style.display = "block";
+          html += `
+            <hr style="margin: 15px 0; border-color: rgba(255,255,255,0.3);">
+            <h4>Cough Spectrogram Analysis:</h4>
+            <img src="data:image/png;base64,${data.spectrogram_base64}"
+                 style="width: 100%; border-radius: 8px; margin-top: 10px;">
+          `;
         }
+
+        // Add disclaimer
+        html += `
+          <hr style="margin: 15px 0; border-color: rgba(255,255,255,0.3);">
+          <p style="font-size: 0.85rem; font-style: italic; color: #b0b0b0;">
+            ${data.disclaimer}
+          </p>
+        `;
+
+        // Add download link
         if (data.report_link) {
-          const linkBox = document.getElementById("pdfLinkBox");
-          const downloadLink = document.getElementById("pdfDownload");
-          downloadLink.href = data.report_link;
-          linkBox.style.display = "block";
+          html += `
+            <a href="${data.report_link}"
+               style="display: inline-block; margin-top: 15px; padding: 10px 20px;
+                      background: #00695c; color: white; text-decoration: none;
+                      border-radius: 8px; font-weight: bold;">
+              📄 Download PDF Report
+            </a>
+          `;
         }
-      })
-      .catch(err => {
-        document.getElementById("loadingSpinner").style.display = "none";
-        alert("Prediction failed. Please try again."); console.error(err);
-      });
+
+        resultBox.innerHTML = html;
+
+        // Reset recording UI for next use
+        status.innerHTML = '';
+        audioInput.value = '';
+
+      } catch (err) {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        alert('Prediction failed: ' + err.message);
+        console.error(err);
+      }
     });
   </script>
 </body>
